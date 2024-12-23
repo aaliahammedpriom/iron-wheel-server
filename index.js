@@ -59,6 +59,25 @@ async function run() {
 
       // book service related apis
 
+      // booked service get
+      app.get('/booked-services', async(req,res)=>{
+        const email = req.query.email;
+        const query ={ userEmail: email}
+        const result = await bookedServiceCollection.find(query).toArray()
+        // agregate data
+        for(const service of result){
+          const query = {_id : (service.serviceId)}
+          const serviceResult = await serviceCollection.findOne(query)
+          if(serviceResult){
+            service.service = serviceResult.service;
+            service.serviceProvider = serviceResult.serviceProvider;
+          }
+          
+
+        }
+        res.send(result)
+      })
+      // booked service post
       app.post('/booked-services', async(req,res)=>{
         const bookedService = req.body;
         console.log(bookedService)
