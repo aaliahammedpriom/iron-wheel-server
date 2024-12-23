@@ -42,7 +42,19 @@ async function run() {
         const result = await cursor.toArray();
         res.send(result)
     })
-    
+    // single service
+    app.get('/services/:id', async (req, res) => {
+        const id = req.params.id;
+        console.log(id)
+        const query = { _id: id };
+
+        console.log(query)
+
+        const result = await serviceCollection.findOne(query);
+        console.log(result)
+
+        res.send(result)
+      })
   } finally {
     // Ensures that the client will close when you finish/error
     // await client.close();
