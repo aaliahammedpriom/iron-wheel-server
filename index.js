@@ -47,13 +47,20 @@ async function run() {
     app.get('/services/:id', async (req, res) => {
         const id = req.params.id;
         console.log(id)
-        const query = { _id: id };
+        const query = {_id : new ObjectId(id)};
 
-        console.log(query)
+        // console.log(query)
 
         const result = await serviceCollection.findOne(query);
-        console.log(result)
+        // console.log(result)
 
+        res.send(result)
+      })
+      // srevice post
+      app.post(`/services`, async(req,res)=>{
+        const newService =req.body;
+        // console.log(newService);
+        const result =await serviceCollection.insertOne(newService)
         res.send(result)
       })
 
@@ -66,7 +73,7 @@ async function run() {
         const result = await bookedServiceCollection.find(query).toArray()
         // agregate data
         for(const service of result){
-          const query = {_id : (service.serviceId)}
+          const query = {_id : new ObjectId(service.serviceId)}
           const serviceResult = await serviceCollection.findOne(query)
           if(serviceResult){
             service.service = serviceResult.service;
