@@ -35,6 +35,7 @@ async function run() {
 
     // service related apis
     const serviceCollection = client.db('services_DB').collection('services')
+    const bookedServiceCollection = client.db('services_DB').collection('booked_Services')
 
     // all services
     app.get('/services', async(req, res)=>{
@@ -53,6 +54,15 @@ async function run() {
         const result = await serviceCollection.findOne(query);
         console.log(result)
 
+        res.send(result)
+      })
+
+      // book service related apis
+
+      app.post('/booked-services', async(req,res)=>{
+        const bookedService = req.body;
+        console.log(bookedService)
+        const result = await bookedServiceCollection.insertOne(bookedService);
         res.send(result)
       })
   } finally {
