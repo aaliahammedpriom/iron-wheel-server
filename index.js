@@ -39,7 +39,12 @@ async function run() {
 
     // all services
     app.get('/services', async(req, res)=>{
-        const cursor = serviceCollection.find();
+      const loginEmail = req.query.email;
+      let query ={}
+      if(loginEmail){
+        query ={'serviceProvider.email' : loginEmail}
+      }
+        const cursor = serviceCollection.find(query);
         const result = await cursor.toArray();
         res.send(result)
     })
