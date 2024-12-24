@@ -74,7 +74,15 @@ async function run() {
       // booked service get
       app.get('/booked-services', async(req,res)=>{
         const email = req.query.email;
-        const query ={ userEmail: email}
+        const provideremail =req.query.provideremail;
+        let query ={}
+        if(email){
+         query ={ userEmail: email}
+        }
+        if(provideremail){
+          query ={"serviceProvider.email" : provideremail}
+
+        }
         const result = await bookedServiceCollection.find(query).toArray()
         // agregate data
         for(const service of result){
@@ -84,18 +92,57 @@ async function run() {
             service.service = serviceResult.service;
             service.serviceProvider = serviceResult.serviceProvider;
           }
-          
-
         }
+        console.log(email)
+        console.log(provideremail)
+        console.log(query)
         res.send(result)
       })
       // booked service post
       app.post('/booked-services', async(req,res)=>{
         const bookedService = req.body;
-        console.log(bookedService)
+        // console.log(bookedService)
         const result = await bookedServiceCollection.insertOne(bookedService);
+
+        // use aggrigate
+        const id =bookedService.serviceId;
+        const query = {_id : new ObjectId(id)}
+        const service = await serviceCollection.findOne(query);
+        // console.log(service)
+        let count  = 0;
+        if(service.serviceCount){
+          count = service.serviceCount+1
+        }
+        else{
+          count  = 1
+        }
+        // now update job info
+        const filter = {_id : new ObjectId(id)};
+        const updatedDoc ={
+          $set :{
+            serviceCount: count
+          }
+        }
+        const updateResult = await serviceCollection.updateOne(filter, updatedDoc)
         res.send(result)
       })
+
+      // book service patch
+      app.patch(`/booked-services/:id`, async(req,res)=>{
+        const id = req.params.id;
+        const data = req.body;
+        // console.log(id, data)
+        const filter = {_id : new ObjectId(id)}
+        const upadatedDoc ={ 
+          $set:{
+            serviceStatus:  data.status
+          }
+        }
+        const result = await bookedServiceCollection.updateOne(filter, upadatedDoc);
+        res.send(result)
+      })
+
+      
   } finally {
     // Ensures that the client will close when you finish/error
     // await client.close();
