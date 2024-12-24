@@ -68,7 +68,36 @@ async function run() {
       const result = await serviceCollection.insertOne(newService)
       res.send(result)
     })
-    
+    // put service
+    app.put('/services/:id', async (req, res) => {
+      const id = req.params.id;
+      const updateService = req.body; // Data to update
+      const filter = { _id: new ObjectId(id) }; // Filter for the service to update
+      const options = { upsert: true }; // If no matching document is found, create a new one
+
+      const service = {
+        $set: {
+          serviceProvider: {
+            name: updateService.serviceProvider.name,
+            email: updateService.serviceProvider.email,
+            image: updateService.serviceProvider.image,
+            location: updateService.serviceProvider.location,
+          },
+          service: {
+            image: updateService.service.image,
+            name: updateService.service.name,
+            description: updateService.service.description,
+            providerImage: updateService.service.providerImage,
+            providerName: updateService.service.providerName,
+            price: updateService.service.price,
+          },
+        },
+      };
+      const result = await services.updateOne(filter, service, options);
+      res.send(result);
+
+
+    });
     // delete service
     app.delete('/services/:id', async (req, res) => {
       const id = req.params.id;
