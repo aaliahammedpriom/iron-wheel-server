@@ -38,111 +38,119 @@ async function run() {
     const bookedServiceCollection = client.db('services_DB').collection('booked_Services')
 
     // all services
-    app.get('/services', async(req, res)=>{
+    app.get('/services', async (req, res) => {
       const loginEmail = req.query.email;
-      let query ={}
-      if(loginEmail){
-        query ={'serviceProvider.email' : loginEmail}
+      let query = {}
+      if (loginEmail) {
+        query = { 'serviceProvider.email': loginEmail }
       }
-        const cursor = serviceCollection.find(query);
-        const result = await cursor.toArray();
-        res.send(result)
+      const cursor = serviceCollection.find(query);
+      const result = await cursor.toArray();
+      res.send(result)
     })
     // single service
     app.get('/services/:id', async (req, res) => {
-        const id = req.params.id;
-        console.log(id)
-        const query = {_id : new ObjectId(id)};
+      const id = req.params.id;
+      console.log(id)
+      const query = { _id: new ObjectId(id) };
 
-        // console.log(query)
+      // console.log(query)
 
-        const result = await serviceCollection.findOne(query);
-        // console.log(result)
+      const result = await serviceCollection.findOne(query);
+      // console.log(result)
 
-        res.send(result)
-      })
-      // srevice post
-      app.post(`/services`, async(req,res)=>{
-        const newService =req.body;
-        // console.log(newService);
-        const result =await serviceCollection.insertOne(newService)
-        res.send(result)
-      })
+      res.send(result)
+    })
+    // srevice post
+    app.post(`/services`, async (req, res) => {
+      const newService = req.body;
+      // console.log(newService);
+      const result = await serviceCollection.insertOne(newService)
+      res.send(result)
+    })
+    
+    // delete service
+    app.delete('/services/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) }
+      const result = await serviceCollection.deleteOne(query)
+      res.send(result)
+    })
 
-      // book service related apis
+    // book service related apis
 
-      // booked service get
-      app.get('/booked-services', async(req,res)=>{
-        const email = req.query.email;
-        const provideremail =req.query.provideremail;
-        let query ={}
-        if(email){
-         query ={ userEmail: email}
+    // booked service get
+    app.get('/booked-services', async (req, res) => {
+      const email = req.query.email;
+      const provideremail = req.query.provideremail;
+      let query = {}
+      if (email) {
+        query = { userEmail: email }
+      }
+      if (provideremail) {
+        query = { "serviceProvider.email": provideremail }
+
+      }
+      const result = await bookedServiceCollection.find(query).toArray()
+      // agregate data
+      for (const service of result) {
+        const query = { _id: new ObjectId(service.serviceId) }
+        const serviceResult = await serviceCollection.findOne(query)
+        if (serviceResult) {
+          service.service = serviceResult.service;
+          service.serviceProvider = serviceResult.serviceProvider;
         }
-        if(provideremail){
-          query ={"serviceProvider.email" : provideremail}
+      }
+      console.log(email)
+      console.log(provideremail)
+      console.log(query)
+      res.send(result)
+    })
+    // booked service post
+    app.post('/booked-services', async (req, res) => {
+      const bookedService = req.body;
+      // console.log(bookedService)
+      const result = await bookedServiceCollection.insertOne(bookedService);
 
+      // use aggrigate
+      const id = bookedService.serviceId;
+      const query = { _id: new ObjectId(id) }
+      const service = await serviceCollection.findOne(query);
+      // console.log(service)
+      let count = 0;
+      if (service.serviceCount) {
+        count = service.serviceCount + 1
+      }
+      else {
+        count = 1
+      }
+      // now update job info
+      const filter = { _id: new ObjectId(id) };
+      const updatedDoc = {
+        $set: {
+          serviceCount: count
         }
-        const result = await bookedServiceCollection.find(query).toArray()
-        // agregate data
-        for(const service of result){
-          const query = {_id : new ObjectId(service.serviceId)}
-          const serviceResult = await serviceCollection.findOne(query)
-          if(serviceResult){
-            service.service = serviceResult.service;
-            service.serviceProvider = serviceResult.serviceProvider;
-          }
-        }
-        console.log(email)
-        console.log(provideremail)
-        console.log(query)
-        res.send(result)
-      })
-      // booked service post
-      app.post('/booked-services', async(req,res)=>{
-        const bookedService = req.body;
-        // console.log(bookedService)
-        const result = await bookedServiceCollection.insertOne(bookedService);
+      }
+      const updateResult = await serviceCollection.updateOne(filter, updatedDoc)
+      res.send(result)
+    })
 
-        // use aggrigate
-        const id =bookedService.serviceId;
-        const query = {_id : new ObjectId(id)}
-        const service = await serviceCollection.findOne(query);
-        // console.log(service)
-        let count  = 0;
-        if(service.serviceCount){
-          count = service.serviceCount+1
+    // book service patch
+    app.patch(`/booked-services/:id`, async (req, res) => {
+      const id = req.params.id;
+      const data = req.body;
+      // console.log(id, data)
+      const filter = { _id: new ObjectId(id) }
+      const upadatedDoc = {
+        $set: {
+          serviceStatus: data.status
         }
-        else{
-          count  = 1
-        }
-        // now update job info
-        const filter = {_id : new ObjectId(id)};
-        const updatedDoc ={
-          $set :{
-            serviceCount: count
-          }
-        }
-        const updateResult = await serviceCollection.updateOne(filter, updatedDoc)
-        res.send(result)
-      })
+      }
+      const result = await bookedServiceCollection.updateOne(filter, upadatedDoc);
+      res.send(result)
+    })
 
-      // book service patch
-      app.patch(`/booked-services/:id`, async(req,res)=>{
-        const id = req.params.id;
-        const data = req.body;
-        // console.log(id, data)
-        const filter = {_id : new ObjectId(id)}
-        const upadatedDoc ={ 
-          $set:{
-            serviceStatus:  data.status
-          }
-        }
-        const result = await bookedServiceCollection.updateOne(filter, upadatedDoc);
-        res.send(result)
-      })
 
-      
   } finally {
     // Ensures that the client will close when you finish/error
     // await client.close();
@@ -151,9 +159,9 @@ async function run() {
 run().catch(console.dir);
 
 
-app.get('/', async(req, res)=>{
-    res.send("Iron Service Server is Running")
+app.get('/', async (req, res) => {
+  res.send("Iron Service Server is Running")
 })
-app.listen(port, ()=>{
-    console.log("server is running on port : " ,port)
+app.listen(port, () => {
+  console.log("server is running on port : ", port)
 })
