@@ -15,7 +15,7 @@ app.use(express.json());
 
 
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
-const uri = "mongodb+srv://aaliahammedpriom66:YuTKjTdm9SMc4r2U@cluster0.5dnt8.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
+const uri = `mongodb+srv://${process.env.user_DB}:${process.env.user_Pass}@cluster0.5dnt8.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
   serverApi: {
@@ -51,7 +51,7 @@ async function run() {
     // single service
     app.get('/services/:id', async (req, res) => {
       const id = req.params.id;
-      console.log(id)
+      // console.log(id)
       const query = { _id: new ObjectId(id) };
 
       // console.log(query)
@@ -71,29 +71,38 @@ async function run() {
     // put service
     app.put('/services/:id', async (req, res) => {
       const id = req.params.id;
-      const updateService = req.body; // Data to update
+      const updateService = req.body;
+      // console.log(updateService)
       const filter = { _id: new ObjectId(id) }; // Filter for the service to update
       const options = { upsert: true }; // If no matching document is found, create a new one
 
       const service = {
         $set: {
           serviceProvider: {
-            name: updateService.serviceProvider.name,
-            email: updateService.serviceProvider.email,
-            image: updateService.serviceProvider.image,
-            location: updateService.serviceProvider.location,
+            name: updateService.providerName,
+            email: updateService.email,
+            image: updateService.providerImage,
+            location: updateService.location
           },
           service: {
-            image: updateService.service.image,
-            name: updateService.service.name,
-            description: updateService.service.description,
-            providerImage: updateService.service.providerImage,
-            providerName: updateService.service.providerName,
-            price: updateService.service.price,
+            image: updateService.image,
+            name: updateService.name,
+            description: updateService.description,
+            providerImage: updateService.providerImage,
+            providerName: updateService.providerName,
+            price: {
+              min: updateService.min,
+              max: updateService.max,
+              currency: updateService.currency
+            } 
           },
         },
       };
-      const result = await services.updateOne(filter, service, options);
+      // console.log(service)
+
+      const result = await serviceCollection.updateOne(filter, service, options);
+      // console.log(result)
+
       res.send(result);
 
 
@@ -130,9 +139,9 @@ async function run() {
           service.serviceProvider = serviceResult.serviceProvider;
         }
       }
-      console.log(email)
-      console.log(provideremail)
-      console.log(query)
+      // console.log(email)
+      // console.log(provideremail)
+      // console.log(query)
       res.send(result)
     })
     // booked service post
