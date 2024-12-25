@@ -20,18 +20,17 @@ app.use(cookieParser());
 const verifytoken = (req, res, next) => {
   const token = req.cookies.token
   console.log("token from verifytoken middleware",token)
-  // if (!token) {
-  //   return res.status(401).send({ message: 'Unauthorized access' })
-  // }
-  // jwt.verify(token, process.env.JWT_Secret, (err, decoded) => {
-  //   if (err) {
-  //     return res.status(401).send({ message: "Unauthorized Access" })
-  //   }
-  //   req.user = decoded;
-  //   // console.log(req.user)
-  //   next();
-  // })
-  next();
+  if (!token) {
+    return res.status(401).send({ message: 'Unauthorized access' })
+  }
+  jwt.verify(token, process.env.JWT_Secret, (err, decoded) => {
+    if (err) {
+      return res.status(401).send({ message: "Unauthorized Access" })
+    }
+    req.user = decoded;
+    console.log(req.user)
+    next();
+  })
 }
 
 
@@ -97,7 +96,7 @@ async function run() {
       res.send(result)
     })
     // single service
-    app.get('/services/:id',verifytoken, async (req, res) => {
+    app.get('/services/:id', async (req, res) => {
       const id = req.params.id;
       // console.log(id)
       const query = { _id: new ObjectId(id) };
@@ -166,13 +165,13 @@ async function run() {
     // book service related apis
 
     // booked service get
-    app.get('/booked-services', async (req, res) => {
+    app.get('/booked-services',verifytoken, async (req, res) => {
       const email = req.query.email;
-      let query = {}
-      if (email) {
-        query = { userEmail: email }
+      const query = { userEmail: email }
+
+      if (req.user.email !== email) {
+        return res.status(403).send({message:"Forbidden Access"})
       }
-      console.log(query)
       const result = await bookedServiceCollection.find(query).toArray()
       // agregate data
       for (const service of result) {
@@ -189,24 +188,7 @@ async function run() {
       res.send(result)
     })
     
-    // manage to do service get
-    app.get('/manage-todo-services', async (req, res) => {
-      
-      const result = await bookedServiceCollection.find().toArray()
-      // agregate data
-      for (const service of result) {
-        const query = { _id: new ObjectId(service.serviceId) }
-        const serviceResult = await serviceCollection.findOne(query)
-        if (serviceResult) {
-          service.service = serviceResult.service;
-          service.serviceProvider = serviceResult.serviceProvider;
-        }
-      }
-      // console.log(email)
-      // console.log(provideremail)
-      // console.log(query)
-      res.send(result)
-    })
+    
     // booked service post
     app.post('/booked-services', async (req, res) => {
       const bookedService = req.body;
@@ -233,6 +215,25 @@ async function run() {
         }
       }
       const updateResult = await serviceCollection.updateOne(filter, updatedDoc)
+      res.send(result)
+    })
+
+    // manage to do service get
+    app.get('/manage-todo-services', async (req, res) => {
+      
+      const result = await bookedServiceCollection.find().toArray()
+      // agregate data
+      for (const service of result) {
+        const query = { _id: new ObjectId(service.serviceId) }
+        const serviceResult = await serviceCollection.findOne(query)
+        if (serviceResult) {
+          service.service = serviceResult.service;
+          service.serviceProvider = serviceResult.serviceProvider;
+        }
+      }
+      // console.log(email)
+      // console.log(provideremail)
+      // console.log(query)
       res.send(result)
     })
 
