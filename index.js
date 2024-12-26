@@ -12,7 +12,7 @@ require('dotenv').config();
 // middleware
 app.use(express.json());
 app.use(cors({
-  origin: ['http://localhost:5173','https://iron-wheel.firebaseapp.com','https://iron-wheel.web.app/'],
+  origin: ['http://localhost:5173','https://iron-wheel.firebaseapp.com','https://iron-wheel.web.app', 'https://elegant-fox-192e45.netlify.app'],
   credentials: true,
 }));
 app.use(cookieParser());
@@ -23,8 +23,9 @@ const verifytoken = (req, res, next) => {
   if (!token) {
     return res.status(401).send({ message: 'Unauthorized access' })
   }
-  jwt.verify(token, process.env.JWT_Secret, (err, decoded) => {
+  jwt.verify(token, process.env.jwt_Secret, (err, decoded) => {
     if (err) {
+      console.log({err})
       return res.status(401).send({ message: "Unauthorized Access" })
     }
     req.user = decoded;
@@ -64,8 +65,8 @@ async function run() {
       res
       .cookie('token', token,{
         httpOnly:true,
-        secure:false,
-        // sameSite: 'strict'
+        secure:true,
+        sameSite: 'none'
       })
       .send({success: true})
 
@@ -74,7 +75,7 @@ async function run() {
     app.post('/logout', async(req, res)=>{
       res.clearCookie('token',{
         httpOnly:true,
-        secure:false,
+        secure:true,
       })
       .send({success:true})
     })
@@ -96,7 +97,7 @@ async function run() {
       res.send(result)
     })
     // single service private
-    app.get('/services/:id',verifytoken, async (req, res) => {
+    app.get('/services/:id', async (req, res) => {
       const id = req.params.id;
       // console.log(id)
       const query = { _id: new ObjectId(id) };
