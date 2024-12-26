@@ -12,7 +12,7 @@ require('dotenv').config();
 // middleware
 app.use(express.json());
 app.use(cors({
-  origin: ['http://localhost:5173'],
+  origin: ['http://localhost:5173','https://iron-wheel.firebaseapp.com','https://iron-wheel.web.app/'],
   credentials: true,
 }));
 app.use(cookieParser());
@@ -28,7 +28,7 @@ const verifytoken = (req, res, next) => {
       return res.status(401).send({ message: "Unauthorized Access" })
     }
     req.user = decoded;
-    console.log(req.user)
+    // console.log(req.user)
     next();
   })
 }
@@ -48,10 +48,10 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
-    await client.connect();
+    // await client.connect();
     // Send a ping to confirm a successful connection
-    await client.db("admin").command({ ping: 1 });
-    console.log("Pinged your deployment. You successfully connected to MongoDB!");
+    // await client.db("admin").command({ ping: 1 });
+    // console.log("Pinged your deployment. You successfully connected to MongoDB!");
 
     // Auth Related Api
     // jwt get token
@@ -83,7 +83,7 @@ async function run() {
     const serviceCollection = client.db('services_DB').collection('services')
     const bookedServiceCollection = client.db('services_DB').collection('booked_Services')
 
-    // all services
+    // all services public
     app.get('/services', async (req, res) => {
       const loginEmail = req.query.email;
       let query = {}
@@ -95,8 +95,8 @@ async function run() {
       
       res.send(result)
     })
-    // single service
-    app.get('/services/:id', async (req, res) => {
+    // single service private
+    app.get('/services/:id',verifytoken, async (req, res) => {
       const id = req.params.id;
       // console.log(id)
       const query = { _id: new ObjectId(id) };
@@ -108,15 +108,15 @@ async function run() {
 
       res.send(result)
     })
-    // srevice post
-    app.post(`/services`, async (req, res) => {
+    // srevice post private
+    app.post(`/services`,verifytoken, async (req, res) => {
       const newService = req.body;
       // console.log(newService);
       const result = await serviceCollection.insertOne(newService)
       res.send(result)
     })
-    // put service
-    app.put('/services/:id', async (req, res) => {
+    // put service private
+    app.put('/services/:id',verifytoken, async (req, res) => {
       const id = req.params.id;
       const updateService = req.body;
       // console.log(updateService)
@@ -154,8 +154,8 @@ async function run() {
 
 
     });
-    // delete service
-    app.delete('/services/:id', async (req, res) => {
+    // delete service private
+    app.delete('/services/:id',verifytoken, async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) }
       const result = await serviceCollection.deleteOne(query)
@@ -164,7 +164,7 @@ async function run() {
 
     // book service related apis
 
-    // booked service get
+    // booked service get private
     app.get('/booked-services',verifytoken, async (req, res) => {
       const email = req.query.email;
       const query = { userEmail: email }
@@ -189,8 +189,8 @@ async function run() {
     })
     
     
-    // booked service post
-    app.post('/booked-services', async (req, res) => {
+    // booked service post private
+    app.post('/booked-services',verifytoken, async (req, res) => {
       const bookedService = req.body;
       // console.log(bookedService)
       const result = await bookedServiceCollection.insertOne(bookedService);
@@ -218,8 +218,8 @@ async function run() {
       res.send(result)
     })
 
-    // manage to do service get
-    app.get('/manage-todo-services', async (req, res) => {
+    // manage to do service get private
+    app.get('/manage-todo-services',verifytoken, async (req, res) => {
       
       const result = await bookedServiceCollection.find().toArray()
       // agregate data
@@ -237,8 +237,8 @@ async function run() {
       res.send(result)
     })
 
-    // book service patch
-    app.patch(`/booked-services/:id`, async (req, res) => {
+    // book service patch private
+    app.patch(`/booked-services/:id`,verifytoken, async (req, res) => {
       const id = req.params.id;
       const data = req.body;
       // console.log(id, data)
